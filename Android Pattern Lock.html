@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Pattern Lock</title>
+<style>
+    *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:
+    radial-gradient(circle at top,#1b2735,#090a0f 70%);
+    overflow:hidden;
+}
+
+.container{
+    width:380px;
+    padding:35px;
+    border-radius:25px;
+    backdrop-filter:blur(18px);
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);
+    box-shadow:
+    0 0 40px rgba(0,255,255,.15),
+    inset 0 0 20px rgba(255,255,255,.04);
+    text-align:center;
+}
+
+h1{
+    color:#fff;
+    margin-bottom:12px;
+    letter-spacing:2px;
+}
+
+.status{
+    color:#8ef7ff;
+    margin-bottom:25px;
+    font-size:15px;
+}
+
+.lock{
+    position:relative;
+    width:300px;
+    height:300px;
+    margin:auto;
+
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:50px;
+
+    padding:20px;
+}
+
+.dot{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:#fff;
+    margin:auto;
+    cursor:pointer;
+    position:relative;
+    transition:.25s;
+}
+
+.dot::before{
+    content:"";
+    position:absolute;
+    inset:-12px;
+    border-radius:50%;
+    border:2px solid rgba(0,255,255,.2);
+}
+
+.dot.active{
+    background:#00f7ff;
+    box-shadow:
+    0 0 10px #00f7ff,
+    0 0 25px #00f7ff,
+    0 0 50px #00f7ff;
+    transform:scale(1.2);
+}
+
+.dot.correct{
+    background:#00ff80;
+    box-shadow:
+    0 0 15px #00ff80,
+    0 0 35px #00ff80;
+}
+
+.dot.wrong{
+    background:#ff3b3b;
+    box-shadow:
+    0 0 15px red,
+    0 0 40px red;
+}
+
+svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+polyline{
+    fill:none;
+    stroke:#00f7ff;
+    stroke-width:8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    filter:drop-shadow(0 0 12px cyan);
+}
+
+button{
+    margin-top:25px;
+    border:none;
+    outline:none;
+    background:#00f7ff;
+    color:#111;
+    padding:12px 35px;
+    border-radius:50px;
+    font-size:16px;
+    cursor:pointer;
+    transition:.3s;
+    font-weight:bold;
+}
+
+button:hover{
+    transform:translateY(-3px);
+    box-shadow:0 0 20px cyan;
+}
+
+.correctAnim{
+    animation:success .8s;
+}
+
+@keyframes success{
+
+0%{
+transform:scale(1);
+}
+
+50%{
+transform:scale(1.05);
+box-shadow:0 0 50px #00ff80;
+}
+
+100%{
+transform:scale(1);
+}
+
+}
+
+.wrongAnim{
+    animation:shake .45s;
+}
+
+@keyframes shake{
+
+0%{
+transform:translateX(0);
+}
+
+20%{
+transform:translateX(-10px);
+}
+
+40%{
+transform:translateX(10px);
+}
+
+60%{
+transform:translateX(-10px);
+}
+
+80%{
+transform:translateX(10px);
+}
+
+100%{
+transform:translateX(0);
+}
+
+}
+
+@media(max-width:450px){
+
+.container{
+    width:95%;
+}
+
+.lock{
+    width:260px;
+    height:260px;
+    gap:40px;
+}
+
+}
+.unlock-screen{
+
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+
+    animation:fade .8s ease;
+
+    color:white;
+
+}
+
+.unlock-screen h1{
+
+    font-size:70px;
+    letter-spacing:8px;
+    color:#00ff88;
+
+    text-shadow:
+    0 0 20px #00ff88,
+    0 0 60px #00ff88;
+
+}
+
+.unlock-screen p{
+
+    margin-top:15px;
+    font-size:24px;
+    color:#ddd;
+
+}
+
+.unlock-screen .icon{
+
+    font-size:90px;
+    margin-bottom:25px;
+
+    animation:pop 1s infinite alternate;
+
+}
+
+@keyframes fade{
+
+from{
+
+opacity:0;
+transform:scale(.9);
+
+}
+
+to{
+
+opacity:1;
+transform:scale(1);
+
+}
+
+}
+
+@keyframes pop{
+
+from{
+
+transform:scale(1);
+
+}
+
+to{
+
+transform:scale(1.15);
+
+}
+
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Pattern Lock</h1>
+
+    <div class="status" id="status">
+        Draw your unlock pattern
+    </div>
+
+    <div class="lock" id="lock">
+
+        <svg id="svg">
+            <polyline id="line"></polyline>
+        </svg>
+
+        <div class="dot" data-id="1"></div>
+        <div class="dot" data-id="2"></div>
+        <div class="dot" data-id="3"></div>
+
+        <div class="dot" data-id="4"></div>
+        <div class="dot" data-id="5"></div>
+        <div class="dot" data-id="6"></div>
+
+        <div class="dot" data-id="7"></div>
+        <div class="dot" data-id="8"></div>
+        <div class="dot" data-id="9"></div>
+
+    </div>
+
+    <button id="reset">
+        Reset
+    </button>
+
+</div>
+
+<script>
+    const lock = document.getElementById("lock");
+const dots = [...document.querySelectorAll(".dot")];
+const line = document.getElementById("line");
+const status = document.getElementById("status");
+const reset = document.getElementById("reset");
+
+const correctPattern = [1,2,5,8,9];
+
+let drawing = false;
+let pattern = [];
+let points = [];
+
+function center(dot){
+
+    const lockRect = lock.getBoundingClientRect();
+    const rect = dot.getBoundingClientRect();
+
+    return{
+        x:rect.left+rect.width/2-lockRect.left,
+        y:rect.top+rect.height/2-lockRect.top
+    }
+
+}
+
+function updateLine(){
+
+    line.setAttribute(
+        "points",
+        points.map(p=>`${p.x},${p.y}`).join(" ")
+    );
+
+}
+
+function activate(dot){
+
+    const id = Number(dot.dataset.id);
+
+    if(pattern.includes(id)) return;
+
+    pattern.push(id);
+
+    dot.classList.add("active");
+
+    points.push(center(dot));
+
+    updateLine();
+
+}
+
+function clearPattern(){
+
+    pattern=[];
+    points=[];
+
+    updateLine();
+
+    dots.forEach(dot=>{
+
+        dot.classList.remove("active");
+        dot.classList.remove("correct");
+        dot.classList.remove("wrong");
+
+    });
+
+    lock.classList.remove("wrongAnim");
+    lock.classList.remove("correctAnim");
+
+    status.innerHTML="Draw your unlock pattern";
+
+}
+
+function start(e){
+
+    drawing=true;
+
+    clearPattern();
+
+    const dot=e.target.closest(".dot");
+
+    if(dot){
+
+        activate(dot);
+
+    }
+
+}
+
+function move(e){
+
+    if(!drawing) return;
+
+    const touch=e.touches ? e.touches[0] : e;
+
+    const el=document.elementFromPoint(
+        touch.clientX,
+        touch.clientY
+    );
+
+    const dot=el?.closest(".dot");
+
+    if(dot){
+
+        activate(dot);
+
+    }
+
+}
+function end() {
+
+    if (!drawing) return;
+
+    drawing = false;
+
+    const success =
+        JSON.stringify(pattern) === JSON.stringify(correctPattern);
+
+    if (success) {
+
+        status.innerHTML = "✅ Phone Unlocked";
+
+        dots.forEach(dot => {
+
+            dot.classList.remove("active");
+            dot.classList.add("correct");
+
+        });
+
+        lock.classList.add("correctAnim");
+
+        setTimeout(() => {
+
+            document.body.innerHTML = `
+
+            <div class="unlock-screen">
+
+                <div class="icon">🔓</div>
+
+                <h1>UNLOCKED</h1>
+
+                <p>Welcome Back!</p>
+
+            </div>
+
+            `;
+
+        },1000);
+
+    }
+
+    else{
+
+        status.innerHTML="❌ Wrong Pattern";
+
+        dots.forEach(dot=>{
+
+            if(dot.classList.contains("active")){
+
+                dot.classList.remove("active");
+                dot.classList.add("wrong");
+
+            }
+
+        });
+
+        lock.classList.add("wrongAnim");
+
+        setTimeout(clearPattern,1500);
+
+    }
+
+}
+
+lock.addEventListener("mousedown",start);
+document.addEventListener("mousemove",move);
+document.addEventListener("mouseup",end);
+
+lock.addEventListener("touchstart",start);
+document.addEventListener("touchmove",move,{passive:false});
+document.addEventListener("touchend",end);
+
+reset.addEventListener("click",clearPattern);
+</script>
+
+</body>
+</html>
